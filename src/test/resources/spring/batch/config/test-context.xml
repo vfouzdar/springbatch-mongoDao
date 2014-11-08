@@ -1,0 +1,65 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/data/mongo
+        http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd">
+	
+	<!-- connect to mongodb -->
+	<mongo:mongo host="127.0.0.1" port="27017" />
+	<mongo:db-factory dbname="SpringBatchMongoDB"  />
+ 
+ 	<!-- START: Beans for Mongo DB Storage --> 	
+	<bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg name="mongoDbFactory" ref="mongoDbFactory" />
+	</bean>
+	
+	<bean id="executionContextDao"
+		class="org.springframework.batch.mongodb.MongoExecutionContextDao">
+		<property name="mongoTemplate" ref="mongoTemplate" />
+	</bean>
+	
+	<bean id="jobExecutionDao"
+		class="org.springframework.batch.mongodb.MongoJobExecutionDao">
+		<property name="mongoTemplate" ref="mongoTemplate" />
+	</bean>
+	
+	<bean id="jobInstanceDao"
+		class="org.springframework.batch.mongodb.MongoJobInstanceDao">
+		<property name="mongoTemplate" ref="mongoTemplate" />
+	</bean>
+	
+	<bean id="stepExecutionDao"
+		class="org.springframework.batch.mongodb.MongoStepExecutionDao">
+		<property name="mongoTemplate" ref="mongoTemplate" />
+	</bean>
+		
+	<bean id="jobRepository"
+		class="org.springframework.batch.mongodb.MongoJobRepositoryFactoryBean">
+		<property name="transactionManager" ref="transactionManager" />		
+		<property name="stepExecutionDao" ref="stepExecutionDao" />
+		<property name="jobExecutionDao" ref="jobExecutionDao" />
+		<property name="jobInstanceDao" ref="jobInstanceDao" />
+		<property name="executionContextDao" ref="executionContextDao" />		
+	</bean>
+	<!-- ENDS: Beans for Mongo DB Storage -->
+		
+	<bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+		
+	<!-- 
+	<bean id="transactionManager"
+		class="org.springframework.batch.mongodb.DefaultTransactionManager" />
+ 	-->
+
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+</beans>
