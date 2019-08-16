@@ -49,7 +49,7 @@ public class MongoJobInstanceDaoTests {
 
     @Before
     public void onSetUp() throws Exception {
-        mongoTemplate.getDb().dropDatabase();        
+        mongoTemplate.getDb().drop();
     }
 
     /*

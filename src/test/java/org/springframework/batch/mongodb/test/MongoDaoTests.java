@@ -24,7 +24,7 @@ public class MongoDaoTests extends AbstractJobDaoTests{
 
     @Test
     public void testGetNextId() {
-    	mongoTemplate.getDb().dropDatabase();
+    	mongoTemplate.getDb().drop();
         for (long i = 1; i <= 100; i++) {        	
         	JobInstance ji = jobInstanceDao.createJobInstance("testJob_" + i, new JobParameters());
         	

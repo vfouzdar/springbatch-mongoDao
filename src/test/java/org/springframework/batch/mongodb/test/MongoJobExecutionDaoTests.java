@@ -59,7 +59,7 @@ public class MongoJobExecutionDaoTests{
 
     @Before
     public void onSetUp() throws Exception {
-    	mongoTemplate.getDb().dropDatabase();
+    	mongoTemplate.getDb().drop();
         jobInstance = jobInstanceDao.createJobInstance("Job1", new JobParameters());
         execution = new JobExecution(jobInstance, null);
     }

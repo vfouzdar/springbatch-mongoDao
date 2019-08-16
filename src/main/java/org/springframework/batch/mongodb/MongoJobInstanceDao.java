@@ -15,6 +15,10 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import org.apache.commons.collections4.IterableUtils;
+import org.bson.Document;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.JobParameter;
@@ -49,7 +53,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
 	 
     @PostConstruct
     public void init() {
-        getCollection().ensureIndex(jobInstanceIdObj(1L));
+        getCollection().createIndex(jobInstanceIdObj(1L));
     }
 
     public JobInstance createJobInstance(String jobName, final JobParameters jobParameters) {
@@ -70,12 +74,13 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         for (Map.Entry<String, JobParameter> entry : jobParams.entrySet()) {
             paramMap.put(entry.getKey().replaceAll(DOT_STRING, DOT_ESCAPE_STRING), entry.getValue().getValue());
         }
-        getCollection().save(start()
-                .add(JOB_INSTANCE_ID_KEY, jobId)
-                .add(JOB_NAME_KEY, jobName)
-                .add(JOB_KEY_KEY, createJobKey(jobParameters))
-                .add(VERSION_KEY, jobInstance.getVersion())
-                .add(JOB_PARAMETERS_KEY, new BasicDBObject(paramMap)).get());
+
+        getCollection().insertOne(new Document()
+                .append(JOB_INSTANCE_ID_KEY, jobId)
+                .append(JOB_NAME_KEY, jobName)
+                .append(JOB_KEY_KEY, createJobKey(jobParameters))
+                .append(VERSION_KEY, jobInstance.getVersion())
+                .append(JOB_PARAMETERS_KEY, new Document(paramMap)));
         return jobInstance;
     }
 
@@ -85,28 +90,28 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
 
         String jobKey = createJobKey(jobParameters);
 
-        return mapJobInstance(getCollection().findOne(start()
-                .add(JOB_NAME_KEY, jobName)
-                .add(JOB_KEY_KEY, jobKey).get()), jobParameters);
+        return mapJobInstance(getCollection().find(new Document()
+                .append(JOB_NAME_KEY, jobName)
+                .append(JOB_KEY_KEY, jobKey)).first(), jobParameters);
     }
 
     public JobInstance getJobInstance(Long instanceId) {
-        return mapJobInstance(getCollection().findOne(jobInstanceIdObj(instanceId)));
+        return mapJobInstance(getCollection().find(jobInstanceIdObj(instanceId)).first());
     }
 
     public JobInstance getJobInstance(JobExecution jobExecution) {
-        DBObject instanceId = mongoTemplate.getCollection(JobExecution.class.getSimpleName()).findOne(jobExecutionIdObj(jobExecution.getId()), jobInstanceIdObj(1L));
+        Document instanceId = mongoTemplate.getCollection(JobExecution.class.getSimpleName()).find(jobExecutionIdObj(jobExecution.getId())).projection(jobInstanceIdObj(1L)).first();
         removeSystemFields(instanceId);
-        return mapJobInstance(getCollection().findOne(instanceId));
+        return mapJobInstance(getCollection().find(instanceId).first());
     }
 
     public List<JobInstance> getJobInstances(String jobName, int start, int count) {
-        return mapJobInstances(getCollection().find(new BasicDBObject(JOB_NAME_KEY, jobName)).sort(jobInstanceIdObj(-1L)).skip(start).limit(count));
+        return mapJobInstances(getCollection().find(new Document(JOB_NAME_KEY, jobName)).sort(jobInstanceIdObj(-1L)).skip(start).limit(count).cursor());
     }
 
     @SuppressWarnings({"unchecked"})
     public List<String> getJobNames() {
-        List results = getCollection().distinct(JOB_NAME_KEY);
+        List<String> results = IterableUtils.toList(getCollection().distinct(JOB_NAME_KEY, String.class));
         Collections.sort(results);
         return results;
     }
@@ -140,11 +145,11 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
     }
 
     @Override
-    protected DBCollection getCollection() {
+    protected MongoCollection<Document> getCollection() {
         return mongoTemplate.getCollection(JobInstance.class.getSimpleName());
     }
 
-    private List<JobInstance> mapJobInstances(DBCursor dbCursor) {
+    private List<JobInstance> mapJobInstances(MongoCursor<Document> dbCursor) {
         List<JobInstance> results = new ArrayList<JobInstance>();
         while (dbCursor.hasNext()) {
             results.add(mapJobInstance(dbCursor.next()));
@@ -152,19 +157,19 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
         return results;
     }
 
-    private JobInstance mapJobInstance(DBObject dbObject) {
-        return mapJobInstance(dbObject, null);
+    private JobInstance mapJobInstance(Document document) {
+        return mapJobInstance(document, null);
     }
 
-    private JobInstance mapJobInstance(DBObject dbObject, JobParameters jobParameters) {
+    private JobInstance mapJobInstance(Document document, JobParameters jobParameters) {
         JobInstance jobInstance = null;
-        if (dbObject != null) {
-            Long id = (Long) dbObject.get(JOB_INSTANCE_ID_KEY);
+        if (document != null) {
+            Long id =  document.getLong(JOB_INSTANCE_ID_KEY);
             if (jobParameters == null) {
                 jobParameters = getJobParameters(id, mongoTemplate);
             }
             
-            jobInstance = new JobInstance(id, (String) dbObject.get(JOB_NAME_KEY)); // should always be at version=0 because they never get updated
+            jobInstance = new JobInstance(id, document.getString(JOB_NAME_KEY)); // should always be at version=0 because they never get updated
             jobInstance.incrementVersion();
         }
         return jobInstance;
@@ -176,8 +181,8 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
 			int count) {
 		List<JobInstance> result = new ArrayList<JobInstance>();
 		List<JobInstance> jobInstances = mapJobInstances(getCollection().find(
-				new BasicDBObject(JOB_NAME_KEY, jobName)).sort(
-				jobInstanceIdObj(-1L)));
+				new Document(JOB_NAME_KEY, jobName)).sort(
+				jobInstanceIdObj(-1L)).cursor());
 		for (JobInstance instanceEntry : jobInstances) {
 			String key = instanceEntry.getJobName();
 			String curJobName = key.substring(0, key.lastIndexOf("|"));
@@ -195,7 +200,7 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
 		int count = 0;
 		List<JobInstance> jobInstances = mapJobInstances(getCollection().find(
 				new BasicDBObject(JOB_NAME_KEY, jobName)).sort(
-				jobInstanceIdObj(-1L)));
+				jobInstanceIdObj(-1L)).cursor());
 		for (JobInstance instanceEntry : jobInstances) {
 			String key = instanceEntry.getJobName();
 			String curJobName = key.substring(0, key.lastIndexOf("|"));

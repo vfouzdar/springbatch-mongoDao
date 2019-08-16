@@ -64,7 +64,7 @@ public class MongoStepExecutionDaoTests {
 
     @Before
     public void onSetUp() throws Exception {
-        mongoTemplate.getDb().dropDatabase();
+        mongoTemplate.getDb().drop();
         jobExecution = jobRepository.createJobExecution("job", new JobParameters());
         jobInstance = jobExecution.getJobInstance();
         step = new StepSupport("foo");

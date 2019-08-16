@@ -52,7 +52,7 @@ public class MongoExecutionContextDaoTests{
     
     @Before
     public void setUp() {
-    	mongoTemplate.getDb().dropDatabase();
+    	mongoTemplate.getDb().drop();
         JobInstance ji = jobInstanceDao.createJobInstance("testJob", new JobParameters());
         
         jobExecution = new JobExecution(ji,null);
