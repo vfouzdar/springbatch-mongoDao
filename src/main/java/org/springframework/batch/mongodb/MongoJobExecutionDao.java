@@ -15,6 +15,7 @@ import com.mongodb.*;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -119,15 +120,14 @@ public class MongoJobExecutionDao extends AbstractMongoDao implements
 
 		Document object = toDbObjectWithoutVersion(jobExecution);
 		object.put(VERSION_KEY, version);
-		getCollection().replaceOne(
+		UpdateResult result = getCollection().replaceOne(
 				new Document().append(JOB_EXECUTION_ID_KEY, jobExecutionId)
 						.append(VERSION_KEY, jobExecution.getVersion()),
 				object);
 
 		// Avoid concurrent modifications...
-		WriteConcern lastError = mongoTemplate.getDb().getWriteConcern();
-		if (lastError.isAcknowledged()) {
-			LOG.error("Update returned status {}", lastError);
+		if (result.getModifiedCount() == 0 && result.getMatchedCount() == 0) {
+			LOG.error("Update returned status {}", result);
 			Document existingJobExecution = getCollection().find(
 					jobExecutionIdObj(jobExecutionId)).projection(
 					new Document(VERSION_KEY, 1)).first();

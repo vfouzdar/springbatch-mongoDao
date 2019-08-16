@@ -4,6 +4,7 @@ package org.springframework.batch.mongodb;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,15 +92,15 @@ public class MongoStepExecutionDao extends AbstractMongoDao implements StepExecu
         Integer newVersion = currentVersion + 1;
         Document object = toDbObjectWithoutVersion(stepExecution);
         object.put(VERSION_KEY, newVersion);
-        getCollection().replaceOne(new Document()
-                .append(STEP_EXECUTION_ID_KEY, stepExecution.getId())
-                .append(VERSION_KEY, currentVersion),
+        UpdateResult result = getCollection().replaceOne(new Document()
+                        .append(STEP_EXECUTION_ID_KEY, stepExecution.getId())
+                        .append(VERSION_KEY, currentVersion),
                 object);
 
+
         // Avoid concurrent modifications...
-        WriteConcern lastError = mongoTemplate.getDb().getWriteConcern();
-        if (!lastError.isAcknowledged()) {
-            LOG.error("Update returned status {}", lastError);
+        if (result.getMatchedCount() == 0 && result.getModifiedCount() == 0) {
+            LOG.error("Update returned status {}", result);
             Document existingStepExecution = getCollection().find(stepExecutionIdObj(stepExecution.getId())).projection(new Document(VERSION_KEY, 1)).first();
             if (existingStepExecution == null) {
                 throw new IllegalArgumentException("Can't update this stepExecution, it was never saved.");
