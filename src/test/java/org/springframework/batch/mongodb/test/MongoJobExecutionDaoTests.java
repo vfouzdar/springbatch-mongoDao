@@ -22,6 +22,9 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
+import org.springframework.batch.mongodb.test.config.BatchConfig;
+import org.springframework.batch.mongodb.test.config.BatchDaoConfig;
+import org.springframework.batch.mongodb.test.config.MongoConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -30,8 +33,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.Assert;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-	    "classpath:spring/batch/config/test-context.xml"})
+@ContextConfiguration(classes = {MongoConfig.class, BatchDaoConfig.class, BatchConfig.class})
 public class MongoJobExecutionDaoTests{
 
 	@Autowired

@@ -5,14 +5,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.mongodb.test.config.BatchConfig;
+import org.springframework.batch.mongodb.test.config.BatchDaoConfig;
+import org.springframework.batch.mongodb.test.config.MongoConfig;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-	    "classpath:spring/batch/config/test-context.xml"})
+@ContextConfiguration(classes = {MongoConfig.class, BatchDaoConfig.class, BatchConfig.class})
 public class MongoJobDaoTests extends AbstractJobDaoTests{
 	
 	

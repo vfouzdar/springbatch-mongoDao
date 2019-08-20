@@ -1,23 +1,9 @@
 package org.springframework.batch.mongodb;
 
 
-import static com.mongodb.BasicDBObjectBuilder.start;
-
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import org.apache.commons.collections4.IterableUtils;
 import org.bson.Document;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobInstance;
@@ -29,10 +15,12 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
+import javax.annotation.PostConstruct;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 /**
  * Uses MongoTemplate to perform CRUD on Springbatch's Job Instance Data to
@@ -111,9 +99,12 @@ public class MongoJobInstanceDao extends AbstractMongoDao implements JobInstance
 
     @SuppressWarnings({"unchecked"})
     public List<String> getJobNames() {
-        List<String> results = IterableUtils.toList(getCollection().distinct(JOB_NAME_KEY, String.class));
-        Collections.sort(results);
-        return results;
+	     List<String> names = new ArrayList<>();
+        Iterator<String> namesIt = getCollection().distinct(JOB_NAME_KEY, String.class).iterator();
+        while(namesIt.hasNext())
+            names.add(namesIt.next());
+        Collections.sort(names);
+        return names;
     }
 
     protected String createJobKey(JobParameters jobParameters) {

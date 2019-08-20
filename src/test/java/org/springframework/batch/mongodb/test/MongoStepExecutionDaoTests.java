@@ -17,21 +17,30 @@
 package org.springframework.batch.mongodb.test;
 
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
+import org.springframework.batch.mongodb.test.config.BatchConfig;
+import org.springframework.batch.mongodb.test.config.BatchDaoConfig;
+import org.springframework.batch.mongodb.test.config.MongoConfig;
 import org.springframework.batch.mongodb.test.support.StepSupport;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.MutablePropertySources;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -41,12 +50,14 @@ import static org.junit.Assert.*;
  * @see #getStepExecutionDao()
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-	    "classpath:spring/batch/config/test-context.xml"})
+@ContextConfiguration(classes = {MongoConfig.class, BatchDaoConfig.class, BatchConfig.class})
 public class MongoStepExecutionDaoTests {
 
     @Autowired
     private StepExecutionDao stepExecutionDao;
+
+    @Rule
+    public MongoDataRule mongoDataRule = new MongoDataRule(this);
 
     @Autowired
     private JobRepository jobRepository;
@@ -64,7 +75,7 @@ public class MongoStepExecutionDaoTests {
 
     @Before
     public void onSetUp() throws Exception {
-        mongoTemplate.getDb().drop();
+       // mongoTemplate.getDb().drop();
         jobExecution = jobRepository.createJobExecution("job", new JobParameters());
         jobInstance = jobExecution.getJobInstance();
         step = new StepSupport("foo");
@@ -219,4 +230,7 @@ public class MongoStepExecutionDaoTests {
         assertEquals(expected.getExitStatus(), actual.getExitStatus());
         assertEquals(expected.getJobExecutionId(), actual.getJobExecutionId());
     }
+
+
+
 }
