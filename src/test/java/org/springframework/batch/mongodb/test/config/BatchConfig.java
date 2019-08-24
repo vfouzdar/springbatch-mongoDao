@@ -9,7 +9,6 @@ import org.springframework.batch.core.repository.dao.ExecutionContextDao;
 import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
-import org.springframework.batch.core.repository.support.SimpleJobRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.MongoDbFactory;
@@ -32,14 +31,12 @@ public class BatchConfig implements BatchConfigurer {
     @Autowired
     private MongoDbFactory mongoDbFactory;
 
+    @Autowired
+    private JobRepository jobRepository;
+
     @Override
     public JobRepository getJobRepository() {
-        return new SimpleJobRepository(
-                jobInstanceDao,
-                jobExecutionDao,
-                stepExecutionDao,
-                executionContextDao
-        );
+        return jobRepository;
     }
     @Override
     public PlatformTransactionManager getTransactionManager() {
