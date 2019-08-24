@@ -1,5 +1,6 @@
 package org.springframework.batch.mongodb.test;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.jetbrains.annotations.NotNull;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -47,10 +48,9 @@ public class MongoDbContainer extends GenericContainer<MongoDbContainer> impleme
     }
 
 
-
     @Override
-    public void start() {
-        super.start();
+    protected void containerIsStarted(InspectContainerResponse containerInfo) {
+        super.containerIsStarted(containerInfo);
         try{
             execInContainer("/bin/bash", "-c", "mongo --eval 'printjson(rs.initiate())' --quiet");
             execInContainer("/bin/bash", "-c",
@@ -58,7 +58,6 @@ public class MongoDbContainer extends GenericContainer<MongoDbContainer> impleme
         }catch (Exception ex){
 
         }
-
     }
 
     @Override

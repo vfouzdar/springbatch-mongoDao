@@ -26,9 +26,6 @@ public class MongoConfig extends AbstractMongoConfiguration implements Applicati
         return "test";
     }
 
-
-
-
     @Override
     @Bean
     public MongoClient mongoClient() {
@@ -61,6 +58,4 @@ public class MongoConfig extends AbstractMongoConfiguration implements Applicati
                 .withCommand("--replSet rs");
         return mongo;
     }
-
-
 }
