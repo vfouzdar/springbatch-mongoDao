@@ -20,6 +20,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
+import com.mongodb.client.MongoCursor;
+import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.batch.core.*;
@@ -80,7 +82,7 @@ public abstract class AbstractJobDaoTests {
 
 	@Before
 	public void onSetUpInTransaction() throws Exception {
-		mongoTemplate.getDb().dropDatabase();
+		mongoTemplate.getDb().drop();
 		// Create job.
 		jobInstance = jobInstanceDao.createJobInstance(jobName, jobParameters);
 
@@ -104,9 +106,8 @@ public abstract class AbstractJobDaoTests {
 	}
 
 	private int getVersion(String collectionName, Long id, String idKey) {
-		DBObject dbObject = mongoTemplate.getCollection(collectionName)
-				.findOne(new BasicDBObject(idKey, id),
-						new BasicDBObject(AbstractMongoDao.VERSION_KEY, 1));
+		Document dbObject = mongoTemplate.getCollection(collectionName)
+				.find(new org.bson.Document(idKey, id)).projection(new Document(AbstractMongoDao.VERSION_KEY, 1)).first();
 		return dbObject == null ? 0 : (Integer) dbObject
 				.get(AbstractMongoDao.VERSION_KEY);
 	}
@@ -219,10 +220,10 @@ public abstract class AbstractJobDaoTests {
 		String testJob = "test";
 		// Create job.
 		jobInstance = jobInstanceDao.createJobInstance(testJob, jobParameters);
-		DBObject dbObject = mongoTemplate.getCollection(
-				JobInstance.class.getSimpleName()).findOne(
-				new BasicDBObject(MongoJobInstanceDao.JOB_INSTANCE_ID_KEY,
-						jobInstance.getId()));
+		Document dbObject = mongoTemplate.getCollection(
+				JobInstance.class.getSimpleName()).find(
+				new Document(MongoJobInstanceDao.JOB_INSTANCE_ID_KEY,
+						jobInstance.getId())).first();
 		assertEquals("test", dbObject.get(MongoJobInstanceDao.JOB_NAME_KEY));
 	}
 
@@ -238,17 +239,17 @@ public abstract class AbstractJobDaoTests {
 				jobParameters);
 
 		assertNotNull(instance);
-		DBCursor dbCursor = mongoTemplate.getCollection(
+		MongoCursor<Document> dbCursor = mongoTemplate.getCollection(
 				JobInstance.class.getSimpleName())
 				.find(
-						new BasicDBObject().append(
+						new Document().append(
 								MongoJobInstanceDao.JOB_INSTANCE_ID_KEY,
-								instance.getId())).limit(1);
+								instance.getId())).limit(1).cursor();
 		assertNotNull(dbCursor);
 		assertTrue(dbCursor.hasNext());
-		DBObject dbObject = dbCursor.next();
+		Document dbObject = dbCursor.next();
 		assertNotNull(dbObject);
-		DBObject jobParamObj = (DBObject)dbObject.get(MongoJobInstanceDao.JOB_PARAMETERS_KEY);
+		Document jobParamObj = dbObject.get(MongoJobInstanceDao.JOB_PARAMETERS_KEY, Document.class);
 		assertNotNull(jobParamObj);
 		String encodedKey = "job.key".replaceAll(
 				MongoJobInstanceDao.DOT_STRING,

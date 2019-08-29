@@ -7,6 +7,9 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.UpdateOptions;
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;
@@ -49,9 +52,9 @@ public class MongoExecutionContextDao extends AbstractMongoDao implements
 
 	@PostConstruct
 	public void init() {
-		getCollection().ensureIndex(
-				BasicDBObjectBuilder.start().add(STEP_EXECUTION_ID_KEY, 1)
-						.add(JOB_EXECUTION_ID_KEY, 1).get());
+		getCollection().createIndex(
+				new Document().append(STEP_EXECUTION_ID_KEY, 1)
+						.append(JOB_EXECUTION_ID_KEY, 1));
 	}
 
 	public ExecutionContext getExecutionContext(JobExecution jobExecution) {
@@ -88,7 +91,7 @@ public class MongoExecutionContextDao extends AbstractMongoDao implements
 		Assert.notNull(executionContext,
 				"The ExecutionContext must not be null.");
 
-		DBObject dbObject = new BasicDBObject(executionIdKey, executionId);
+		Document dbObject = new Document(executionIdKey, executionId);
 		for (Map.Entry<String, Object> entry : executionContext.entrySet()) {
 			Object value = entry.getValue();
 			String key = entry.getKey();
@@ -97,19 +100,19 @@ public class MongoExecutionContextDao extends AbstractMongoDao implements
 				dbObject.put(key + TYPE_SUFFIX, value.getClass().getName());
 			}
 		}
-		getCollection().update(new BasicDBObject(executionIdKey, executionId),
-				dbObject, true, false);
+		getCollection().replaceOne(new Document(executionIdKey, executionId),
+				dbObject, new UpdateOptions().upsert(true));
 	}
 
 	@SuppressWarnings({ "unchecked" })
 	private ExecutionContext getExecutionContext(String executionIdKey,
 			Long executionId) {
 		Assert.notNull(executionId, "ExecutionId must not be null.");
-		DBObject result = getCollection().findOne(
-				new BasicDBObject(executionIdKey, executionId));
+		Document result = getCollection().find(
+				new BasicDBObject(executionIdKey, executionId)).first();
 		ExecutionContext executionContext = new ExecutionContext();
 		if (result != null) {
-			result.removeField(executionIdKey);
+			result.remove(executionIdKey);
 			removeSystemFields(result);
 			for (String key : result.keySet()) {
 				Object value = result.get(key);
@@ -132,8 +135,7 @@ public class MongoExecutionContextDao extends AbstractMongoDao implements
 		return executionContext;
 	}
 
-	protected DBCollection getCollection() {
-
+	protected  MongoCollection<Document> getCollection() {
 		return mongoTemplate.getCollection(ExecutionContext.class
 				.getSimpleName());
 	}

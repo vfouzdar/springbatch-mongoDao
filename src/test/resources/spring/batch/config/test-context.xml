@@ -7,12 +7,12 @@
     xmlns:aop="http://www.springframework.org/schema/aop"
 	xsi:schemaLocation="
 		http://www.springframework.org/schema/beans 
-		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/data/mongo
-        http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd">
+        http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
 	
 	<!-- connect to mongodb -->
-	<mongo:mongo host="127.0.0.1" port="27017" />
+	<mongo:mongo-client replica-set="${mongo.uri}" />
 	<mongo:db-factory dbname="SpringBatchMongoDB"  />
  
  	<!-- START: Beans for Mongo DB Storage --> 	
@@ -50,8 +50,11 @@
 	</bean>
 	<!-- ENDS: Beans for Mongo DB Storage -->
 		
-	<bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
-		
+	<!--<bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/> -->
+	<bean id="transactionManager" class="org.springframework.data.mongodb.MongoTransactionManager">
+		<constructor-arg ref="mongoDbFactory"/>
+	</bean>
+
 	<!-- 
 	<bean id="transactionManager"
 		class="org.springframework.batch.mongodb.DefaultTransactionManager" />

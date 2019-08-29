@@ -16,6 +16,9 @@ import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.mongodb.test.config.BatchConfig;
+import org.springframework.batch.mongodb.test.config.BatchDaoConfig;
+import org.springframework.batch.mongodb.test.config.MongoConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ContextConfiguration;
@@ -30,8 +33,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-	    "classpath:spring/batch/config/test-context.xml"})
+@ContextConfiguration(classes = {MongoConfig.class, BatchDaoConfig.class, BatchConfig.class})
 public class MongoExecutionContextDaoTests{
 	
     @Autowired
@@ -52,7 +54,7 @@ public class MongoExecutionContextDaoTests{
     
     @Before
     public void setUp() {
-    	mongoTemplate.getDb().dropDatabase();
+    	mongoTemplate.getDb().drop();
         JobInstance ji = jobInstanceDao.createJobInstance("testJob", new JobParameters());
         
         jobExecution = new JobExecution(ji,null);

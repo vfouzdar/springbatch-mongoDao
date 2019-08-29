@@ -8,6 +8,9 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.UpdateOptions;
+import org.bson.Document;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
@@ -62,34 +65,34 @@ public abstract class AbstractMongoDao {
     public static final String PROCESS_SKIP_COUT_KEY = "processSkipCout";
     public static final String ROLLBACK_COUNT_KEY = "rollbackCount";
             
-    protected abstract DBCollection getCollection();
+    protected abstract MongoCollection<Document> getCollection();
     
         
-    protected Long getNextId(String name, MongoTemplate mongoTemplate) {    	
-        DBCollection collection = mongoTemplate.getDb().getCollection(SEQUENCES_COLLECTION_NAME);
-        BasicDBObject sequence = new BasicDBObject("name", name);
-        collection.update(sequence, new BasicDBObject("$inc", new BasicDBObject("value", 1L)), true, false);
-        return (Long) collection.findOne(sequence).get("value");
+    protected Long getNextId(String name, MongoTemplate mongoTemplate) {
+        MongoCollection<Document> collection = mongoTemplate.getDb().getCollection(SEQUENCES_COLLECTION_NAME);
+        Document sequence = new Document("name", name);
+        collection.updateOne(sequence, new Document("$inc", new Document("value", 1L)), new UpdateOptions().upsert(true));
+        return collection.find(sequence).first().getLong("value");
     }
 
-    protected void removeSystemFields(DBObject dbObject) {
-        dbObject.removeField(ID_KEY);
-        dbObject.removeField(NS_KEY);
+    protected void removeSystemFields(Document doc) {
+        doc.remove(ID_KEY);
+        doc.remove(NS_KEY);
     }
     
-    protected BasicDBObject jobInstanceIdObj(Long id) {
-        return new BasicDBObject(MongoJobInstanceDao.JOB_INSTANCE_ID_KEY, id);
+    protected Document jobInstanceIdObj(long id) {
+        return new Document(MongoJobInstanceDao.JOB_INSTANCE_ID_KEY, id);
     }
     
-    protected BasicDBObject jobExecutionIdObj(Long id) {
-		return new BasicDBObject(JOB_EXECUTION_ID_KEY, id);
+    protected Document jobExecutionIdObj(long id) {
+		return new Document(JOB_EXECUTION_ID_KEY, id);
 	}
     
     @SuppressWarnings({"unchecked"})
     protected JobParameters getJobParameters(Long jobInstanceId, MongoTemplate mongoTemplate) {
-		 DBObject jobParamObj = mongoTemplate
+		 Document jobParamObj = mongoTemplate
 				.getCollection(JobInstance.class.getSimpleName())
-				.findOne(new BasicDBObject(jobInstanceIdObj(jobInstanceId)));
+				.find(new Document(jobInstanceIdObj(jobInstanceId))).first();
 
 		if (jobParamObj != null && jobParamObj.get(MongoJobInstanceDao.JOB_PARAMETERS_KEY) != null){
 			

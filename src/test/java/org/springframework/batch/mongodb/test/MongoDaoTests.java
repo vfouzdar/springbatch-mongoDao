@@ -5,6 +5,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.mongodb.test.config.BatchConfig;
+import org.springframework.batch.mongodb.test.config.BatchDaoConfig;
+import org.springframework.batch.mongodb.test.config.MongoConfig;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.batch.core.JobExecution;
@@ -16,15 +19,14 @@ import org.springframework.batch.core.JobExecution;
  * 
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {
-	    "classpath:spring/batch/config/test-context.xml"})
+@ContextConfiguration(classes = {MongoConfig.class, BatchDaoConfig.class, BatchConfig.class})
 public class MongoDaoTests extends AbstractJobDaoTests{
 
 
 
     @Test
     public void testGetNextId() {
-    	mongoTemplate.getDb().dropDatabase();
+    	mongoTemplate.getDb().drop();
         for (long i = 1; i <= 100; i++) {        	
         	JobInstance ji = jobInstanceDao.createJobInstance("testJob_" + i, new JobParameters());
         	
